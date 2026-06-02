@@ -1,0 +1,1813 @@
+import React, { useState, useEffect } from 'react';
+
+// ==========================================
+// 1. 역도 및 스트렝스 데이터 정의 (TV 공식 프로그램 파싱 데이터)
+// ==========================================
+
+const SNATCH_PROGRAM = {
+  1: {
+    A: {
+      name: "3 Muscle Snatches + 1 Snatch Balance",
+      notes: "각 세트마다 가장 무거운 무게 사용. 세트 간 1분 휴식. 1RM Squat Snatch의 40%에서 시작하여 라운드마다 무게 증량.",
+      sets: [
+        { percent: 40, isPercentRange: true, text: "40% 1RM ~ 점진적 증량" },
+        { percent: 43, isPercentRange: true, text: "증량 세트" },
+        { percent: 46, isPercentRange: true, text: "증량 세트" },
+        { percent: 50, isPercentRange: true, text: "최대 무게 도전" }
+      ]
+    },
+    B: {
+      name: "Snatch (Every 2 mins for 12 mins)",
+      notes: "2 Snatches, 2분마다 총 6세트 진행. 터치앤고 아님, 각 렙마다 리셋. Sets 1-3: 80% 1RM, Sets 4-6: 80%+",
+      sets: [
+        { percent: 80, text: "Set 1 (80%)" },
+        { percent: 80, text: "Set 2 (80%)" },
+        { percent: 80, text: "Set 3 (80%)" },
+        { percent: 82, text: "Set 4 (80%+)" },
+        { percent: 84, text: "Set 5 (80%+)" },
+        { percent: 86, text: "Set 6 (80%+)" }
+      ]
+    }
+  },
+  2: {
+    A: {
+      name: "1 Muscle Snatch + 2 Snatch Balances + 3 Overhead Squats",
+      notes: "세트 간 충분히 휴식. 1RM의 42%에서 시작하여 라운드마다 증량 (목표는 50% 1RM).",
+      sets: [
+        { percent: 42, text: "Set 1 (42%)" },
+        { percent: 45, text: "Set 2" },
+        { percent: 48, text: "Set 3" },
+        { percent: 50, text: "Set 4 (목표 50%)" }
+      ]
+    },
+    B: {
+      name: "Snatch (Every 3 mins for 12 mins)",
+      notes: "4 Snatches, 3분마다 총 4세트 진행. 터치앤고 아님, 각 렙마다 리셋. Sets 1-2: 82%, Sets 3-4: 85%",
+      sets: [
+        { percent: 82, text: "Set 1 (82%)" },
+        { percent: 82, text: "Set 2 (82%)" },
+        { percent: 85, text: "Set 3 (85%)" },
+        { percent: 85, text: "Set 4 (85%)" }
+      ]
+    }
+  },
+  3: {
+    A: {
+      name: "Power Snatch + Floating Snatch + Snatch Balance (Every 1:30 for 7:30)",
+      notes: "1:30마다 총 5세트 수행. 1RM의 50%에서 시작해 매 라운드 증량하여 목표는 62% 1RM.",
+      sets: [
+        { percent: 50, text: "Set 1 (50%)" },
+        { percent: 53, text: "Set 2" },
+        { percent: 56, text: "Set 3" },
+        { percent: 59, text: "Set 4" },
+        { percent: 62, text: "Set 5 (목표 62%)" }
+      ]
+    },
+    B: {
+      name: "Snatch 2-2-2-2-2-2-2-1-1",
+      notes: "세트 간 충분히 휴식. 터치앤고 아님, 매 렙마다 리셋.",
+      sets: [
+        { percent: 77, text: "2 Reps @ 77%" },
+        { percent: 77, text: "2 Reps @ 77%" },
+        { percent: 77, text: "2 Reps @ 77%" },
+        { percent: 82, text: "2 Reps @ 82%" },
+        { percent: 82, text: "2 Reps @ 82%" },
+        { percent: 85, text: "2 Reps @ 85%" },
+        { percent: 85, text: "2 Reps @ 85%" },
+        { percent: 88, text: "1 Rep @ 87-90%" },
+        { percent: 90, text: "1 Rep @ 87-90%" }
+      ]
+    }
+  },
+  4: {
+    A: {
+      name: "1 Power Snatch + 1 Snatch + 1 Snatch Balance",
+      notes: "세트 간 충분히 휴식. 1RM Snatch의 50~65% 중량을 유지.",
+      sets: [
+        { percent: 50, text: "Set 1 (50%)" },
+        { percent: 55, text: "Set 2 (55%)" },
+        { percent: 60, text: "Set 3 (60%)" },
+        { percent: 65, text: "Set 4 (65%)" }
+      ]
+    },
+    B: {
+      name: "Snatch 3-3-2-1-1-1 (Every 2:30)",
+      notes: "2분 30초마다 완료. 싱글 플레이로 매번 리셋. Sets 1-2: 3 Snatches @ 80%, Set 3: 2 Snatches @ 84%, Sets 4-6: 1 Snatch @ 88%+",
+      sets: [
+        { percent: 80, text: "3 Snatches @ 80%" },
+        { percent: 80, text: "3 Snatches @ 80%" },
+        { percent: 84, text: "2 Snatches @ 84%" },
+        { percent: 88, text: "1 Snatch @ 88%" },
+        { percent: 90, text: "1 Snatch @ 90%+" },
+        { percent: 92, text: "1 Snatch @ 92%+" }
+      ]
+    }
+  },
+  5: {
+    A: {
+      name: "1 Muscle Snatch + 1 Floating Squat Snatch + 1 Drop Snatch + 1 Overhead Squat",
+      notes: "40% 1RM으로 시작해 매 세트 증량하여 50% 1RM 도달이 목표.",
+      sets: [
+        { percent: 40, text: "Set 1 (40%)" },
+        { percent: 43, text: "Set 2" },
+        { percent: 45, text: "Set 3" },
+        { percent: 48, text: "Set 4" },
+        { percent: 50, text: "Set 5 (목표 50%)" }
+      ]
+    },
+    B: {
+      name: "1 Floating Squat Snatch + 1 Squat Snatch + 1 Squat Snatch + 1 Overhead Squat",
+      notes: "매 2:30~3분 마다 세트 진행. [1 Floating + 20초 휴식 + 1 Squat Snatch + 20초 휴식 + 1 Squat Snatch + 1 OHS]. 75%~80%에서 시작해 최대 90%를 넘지 않음.",
+      sets: [
+        { percent: 75, text: "Set 1 (75%)" },
+        { percent: 78, text: "Set 2 (78%)" },
+        { percent: 81, text: "Set 3 (81%)" },
+        { percent: 85, text: "Set 4 (85%)" },
+        { percent: 90, text: "Set 5 (최대 90%)" }
+      ]
+    }
+  },
+  6: {
+    A: {
+      name: "2 Power Snatches + 1 Snatch + 2 Overhead Squats",
+      notes: "가장 중요한 것은 자세(Technique). 1RM의 50~60% 구간 유지하며 퀄리티 있는 무브먼트 타겟.",
+      sets: [
+        { percent: 50, text: "Set 1 (50%)" },
+        { percent: 53, text: "Set 2 (53%)" },
+        { percent: 55, text: "Set 3 (55%)" },
+        { percent: 58, text: "Set 4 (58%)" },
+        { percent: 60, text: "Set 5 (60%)" }
+      ]
+    },
+    B: {
+      name: "Squat Snatch (3 Waves of 3-2-1 Touch & Go)",
+      notes: "세트 간 휴식 최대 60초 제한. 웨이브 사이에는 충분히 휴식. (3-2-1 렙 구성)",
+      sets: [
+        { percent: 65, text: "Wave 1 - 3 Reps @ 65%" },
+        { percent: 72, text: "Wave 1 - 2 Reps @ 72%" },
+        { percent: 80, text: "Wave 1 - 1 Rep @ 80%" },
+        { percent: 65, text: "Wave 2 - 3 Reps @ 65%" },
+        { percent: 72, text: "Wave 2 - 2 Reps @ 72%" },
+        { percent: 80, text: "Wave 2 - 1 Rep @ 80%" },
+        { percent: 65, text: "Wave 3 - 3 Reps @ 65%" },
+        { percent: 72, text: "Wave 3 - 2 Reps @ 72%" },
+        { percent: 80, text: "Wave 3 - 1 Rep @ 80%" }
+      ]
+    }
+  },
+  7: {
+    A: {
+      name: "2 Power Snatches + 1 Squat Snatch",
+      notes: "터치앤고 아님. 1RM 55~65% 유지하며 3~4세트 실시.",
+      sets: [
+        { percent: 55, text: "Set 1 (55%)" },
+        { percent: 58, text: "Set 2 (58%)" },
+        { percent: 62, text: "Set 3 (62%)" },
+        { percent: 65, text: "Set 4 (65%)" }
+      ]
+    },
+    B: {
+      name: "1 Squat Snatch + 1 Hang Squat Snatch + 1 Snatch Balance + 1 Squat Snatch",
+      notes: "[1 Squat Snatch + 1 Hang + 1 Snatch Balance] 언브로큰 수행 후 -> 15~20초 휴식 -> 바벨에 5~10 Lbs 추가한 뒤 마지막 1 Squat Snatch 수행 (터치앤고 구성). 77%에서 점진적으로 증가.",
+      sets: [
+        { percent: 77, text: "Set 1 (77% + 마지막 렙 추가)" },
+        { percent: 80, text: "Set 2 (80% + 마지막 렙 추가)" },
+        { percent: 83, text: "Set 3 (83% + 마지막 렙 추가)" },
+        { percent: 86, text: "Set 4 (86% + 마지막 렙 추가)" },
+        { percent: 89, text: "Set 5 (89% + 마지막 렙 추가)" }
+      ]
+    }
+  },
+  8: {
+    A: {
+      name: "1 Muscle Snatch + 3 Power Snatches + 1 Overhead Squat",
+      notes: "[1 Muscle -> 10초 휴식 -> 3 Power Snatches -> 1 OHS]. 싱글 혹은 터치앤고 선택. 40~50% 1RM 유지.",
+      sets: [
+        { percent: 40, text: "Set 1 (40%)" },
+        { percent: 43, text: "Set 2" },
+        { percent: 45, text: "Set 3" },
+        { percent: 48, text: "Set 4" },
+        { percent: 50, text: "Set 5 (50%)" }
+      ]
+    },
+    B: {
+      name: "Snatch Singles (No Touch-And-Go)",
+      notes: "각 렙마다 리셋하며 렙 간 휴식은 최대 30초 이내로 유지. 세트 간 충분히 휴식.",
+      sets: [
+        { percent: 80, text: "2 Reps @ 80% (싱글 수행, 렙 간 휴식 < 30초)" },
+        { percent: 80, text: "2 Reps @ 80%" },
+        { percent: 80, text: "2 Reps @ 80%" },
+        { percent: 85, text: "2 Reps @ 85%" },
+        { percent: 85, text: "2 Reps @ 85%" },
+        { percent: 88, text: "1 Rep @ 88%" },
+        { percent: 90, text: "1 Rep @ 90%" }
+      ]
+    }
+  },
+  9: {
+    A: {
+      name: "Hang Muscle Snatch 3-3-3-3-3",
+      notes: "세트 간 충분히 휴식. 1RM Squat Snatch의 40~55% 구간 유지.",
+      sets: [
+        { percent: 40, text: "3 Reps @ 40%" },
+        { percent: 44, text: "3 Reps @ 44%" },
+        { percent: 48, text: "3 Reps @ 48%" },
+        { percent: 52, text: "3 Reps @ 52%" },
+        { percent: 55, text: "3 Reps @ 55%" }
+      ]
+    },
+    B: {
+      name: "Snatch 1-1-1-1-1",
+      notes: "매 세트 충분히 무겁게 가며 90~92% 수준까지 증량.",
+      sets: [
+        { percent: 80, text: "Set 1 (80%)" },
+        { percent: 84, text: "Set 2 (84%)" },
+        { percent: 88, text: "Set 3 (88%)" },
+        { percent: 90, text: "Set 4 (90%)" },
+        { percent: 92, text: "Set 5 (92% 1RM 도달)" }
+      ]
+    },
+    C: {
+      name: "Snatch Every 2:00 (4 sets)",
+      notes: "2분 간격으로 총 4세트. 고정 85%의 중량감 있는 기술 유지 훈련.",
+      sets: [
+        { percent: 85, text: "Set 1 (85%)" },
+        { percent: 85, text: "Set 2 (85%)" },
+        { percent: 85, text: "Set 3 (85%)" },
+        { percent: 85, text: "Set 4 (85%)" }
+      ]
+    }
+  },
+  10: {
+    A: {
+      name: "3 Muscle Snatches + 3 Snatch Balances + 3 Overhead Squats",
+      notes: "언브로큰(Unbroken) 진행. 대략 40% 1RM으로 가볍게 몸을 풀고 무브먼트 확립.",
+      sets: [
+        { percent: 40, text: "Set 1 (40%)" },
+        { percent: 40, text: "Set 2 (40%)" },
+        { percent: 40, text: "Set 3 (40%)" }
+      ]
+    },
+    B: {
+      name: "Snatch : 1 Rep Max (20 mins)",
+      notes: "20분 내 최고의 1RM 기록을 도달하기 위한 웜업/빌드업 가이드라인.",
+      sets: [
+        { percent: 55, text: "3~5 Reps @ 50-60% (기술 가이드)" },
+        { percent: 68, text: "2~3 Reps @ 65-70%" },
+        { percent: 78, text: "1~2 Reps @ 75-80%" },
+        { percent: 88, text: "1 Rep @ 85-90% (자신감 확립 구간)" },
+        { percent: 95, text: "1 Rep @ 95% (상태 체크)" },
+        { percent: 100, text: "New 1RM Attempt (100%+)" }
+      ]
+    },
+    C: {
+      name: "Snatch (Every 1:30 for 9 mins)",
+      notes: "1분 30초마다 6세트 진행. 위에서 새로 달성한 1RM의 85% 중량으로 스피드 유지.",
+      sets: [
+        { percent: 85, text: "Set 1 (85% NEW 1RM)" },
+        { percent: 85, text: "Set 2 (85% NEW 1RM)" },
+        { percent: 85, text: "Set 3 (85% NEW 1RM)" },
+        { percent: 85, text: "Set 4 (85% NEW 1RM)" },
+        { percent: 85, text: "Set 5 (85% NEW 1RM)" },
+        { percent: 85, text: "Set 6 (85% NEW 1RM)" }
+      ]
+    }
+  }
+};
+
+const CLEAN_JERK_PROGRAM = {
+  1: {
+    A: {
+      name: "3 Muscle Cleans + 1 Push Jerk + 1 Split Jerk (Every 1 min for 5 mins)",
+      notes: "컴플렉스는 중간에 내려놓지 않고 unbroken으로 수행. 40-45%에서 시작하여 최종 50-55%까지 도달.",
+      sets: [
+        { percent: 42, text: "Set 1 (40-45%)" },
+        { percent: 45, text: "Set 2" },
+        { percent: 48, text: "Set 3" },
+        { percent: 51, text: "Set 4" },
+        { percent: 54, text: "Set 5 (50-55%)" }
+      ]
+    },
+    B: {
+      name: "1 Clean + 1 Front Squat + 1 Split Jerk (Every 2 mins for 10 mins)",
+      notes: "2분마다 5세트 수행.",
+      sets: [
+        { percent: 75, text: "Set 1 (75%)" },
+        { percent: 75, text: "Set 2 (75%)" },
+        { percent: 75, text: "Set 3 (75%)" },
+        { percent: 80, text: "Set 4 (80%)" },
+        { percent: 85, text: "Set 5 (85%)" }
+      ]
+    }
+  },
+  2: {
+    A: {
+      name: "1 Hang Squat Clean + 2 Front Squats + 3 Split Jerks",
+      notes: "세트 간 충분히 휴식. 각 세트의 마지막 저크(Jerk)의 캐치 포지션에서 2초간 정지(Pause) 유지. 40-45% -> 50-55%로 증량.",
+      sets: [
+        { percent: 43, text: "Set 1 (40-45%)" },
+        { percent: 47, text: "Set 2" },
+        { percent: 51, text: "Set 3" },
+        { percent: 55, text: "Set 4 (50-55%)" }
+      ]
+    },
+    B: {
+      name: "2 Squat Cleans + 1 Split Jerk (Every 2 mins for 12 mins)",
+      notes: "2분마다 6세트 수행. 터치앤고가 아니며 싱글로 리셋 수행.",
+      sets: [
+        { percent: 75, text: "Set 1 (75%)" },
+        { percent: 75, text: "Set 2 (75%)" },
+        { percent: 80, text: "Set 3 (80%)" },
+        { percent: 80, text: "Set 4 (80%)" },
+        { percent: 85, text: "Set 5 (85%)" },
+        { percent: 85, text: "Set 6 (85%)" }
+      ]
+    }
+  },
+  3: {
+    A: {
+      name: "1 Floating Clean + 1 Front Squat + 2 Split Jerks",
+      notes: "세트 간 충분히 휴식. 1RM Clean & Jerk의 82~85% 중량을 엄격히 준수.",
+      sets: [
+        { percent: 82, text: "Set 1 (82%)" },
+        { percent: 83, text: "Set 2" },
+        { percent: 84, text: "Set 3" },
+        { percent: 85, text: "Set 4 (85%)" }
+      ]
+    },
+    B: {
+      name: "For Time: Clean & Jerk Pyramids (Time Cap: 8 mins)",
+      notes: "시간 측정 목표 훈련. 각 단계의 완벽한 폼 유지.",
+      sets: [
+        { percent: 50, text: "9 Reps @ 50%" },
+        { percent: 60, text: "7 Reps @ 60%" },
+        { percent: 70, text: "5 Reps @ 70%" },
+        { percent: 80, text: "3 Reps @ 80%" }
+      ]
+    }
+  },
+  4: {
+    A: {
+      name: "1 Squat Clean + 1 Front Squat + 1 Push Jerk + 1 Split Jerk (Every 1:15 for 6:15)",
+      notes: "5세트 점진적 증량. 최종 목표는 72-75%를 넘어서는 것.",
+      sets: [
+        { percent: 50, text: "Set 1 (50%)" },
+        { percent: 56, text: "Set 2" },
+        { percent: 62, text: "Set 3" },
+        { percent: 68, text: "Set 4" },
+        { percent: 75, text: "Set 5 (목표 72-75%+)" }
+      ]
+    },
+    B: {
+      name: "1 Clean + 2 Split Jerks (Every 2:30 for 12:30)",
+      notes: "2분 30초 간격으로 총 5세트 수행. 1RM Clean & Jerk의 85% 도달이 주 목표.",
+      sets: [
+        { percent: 75, text: "Set 1 (75%)" },
+        { percent: 78, text: "Set 2" },
+        { percent: 81, text: "Set 3" },
+        { percent: 83, text: "Set 4" },
+        { percent: 85, text: "Set 5 (목표 85%)" }
+      ]
+    }
+  },
+  5: {
+    A: {
+      name: "1 Squat Clean + 3 Front Squats + 5 Push Press + 7 Push Jerks (Every 2 mins for 6 mins)",
+      notes: "언브로큰/터치앤고 무브먼트. 35%에서 시작해 매 세트 증량하여 45%+를 완료하는 것이 목표.",
+      sets: [
+        { percent: 35, text: "Set 1 (35%)" },
+        { percent: 40, text: "Set 2 (40%)" },
+        { percent: 45, text: "Set 3 (목표 45%+)" }
+      ]
+    },
+    B: {
+      name: "1 Clean + 1 Front Squat + 1 Jerk + Rest + 1 Clean & Jerk (Every 2:30 for 12:30)",
+      notes: "[1 Clean + 1 Front Squat + 1 Jerk] 수행 -> 10~15초 휴식 -> [1 Clean & Jerk]. 82%에서 점진적으로 증가시켜 87% 도달.",
+      sets: [
+        { percent: 82, text: "Set 1 (82%)" },
+        { percent: 83, text: "Set 2" },
+        { percent: 84, text: "Set 3" },
+        { percent: 85, text: "Set 4" },
+        { percent: 87, text: "Set 5 (목표 87% 성공)" }
+      ]
+    }
+  },
+  6: {
+    A: {
+      name: "EMOM 5 mins (Each minute add Push Press)",
+      notes: "매 분마다 다음 동작 컴플렉스 완수: 1 PC + 1 HSC + 1 FS + [분수에 따른 Push Press 개수]. 1분: 1회 / 2분: 2회 / ... / 5분: 5회. 1RM의 40~55% 구간 유지.",
+      sets: [
+        { percent: 40, text: "Min 1: +1 Push Press @ 40%" },
+        { percent: 44, text: "Min 2: +2 Push Press @ 44%" },
+        { percent: 48, text: "Min 3: +3 Push Press @ 48%" },
+        { percent: 52, text: "Min 4: +4 Push Press @ 52%" },
+        { percent: 55, text: "Min 5: +5 Push Press @ 55%" }
+      ]
+    },
+    B: {
+      name: "Clean & Jerk (3 Waves of 3-2-1 Touch & Go)",
+      notes: "세트 간 휴식 최대 45초로 제한. 웨이브 사이에는 충분히 휴식.",
+      sets: [
+        { percent: 67, text: "Wave 1 - 3 Reps @ 67%" },
+        { percent: 74, text: "Wave 1 - 2 Reps @ 74%" },
+        { percent: 80, text: "Wave 1 - 1 Rep @ 80%" },
+        { percent: 67, text: "Wave 2 - 3 Reps @ 67%" },
+        { percent: 74, text: "Wave 2 - 2 Reps @ 74%" },
+        { percent: 80, text: "Wave 2 - 1 Rep @ 80%" },
+        { percent: 67, text: "Wave 3 - 3 Reps @ 67%" },
+        { percent: 74, text: "Wave 3 - 2 Reps @ 74%" },
+        { percent: 80, text: "Wave 3 - 1 Rep @ 80%" }
+      ]
+    }
+  },
+  7: {
+    A: {
+      name: "3 Deadlifts + 1 Hang Squat Clean + 1 Push Press + 1 Split Jerk (Every 1:15 for 5 mins)",
+      notes: "40%부터 시작해 가벼운 속도감 및 테크닉 피드백을 느끼며 증량 세트 진행.",
+      sets: [
+        { percent: 40, text: "Set 1 (40%)" },
+        { percent: 45, text: "Set 2" },
+        { percent: 50, text: "Set 3" },
+        { percent: 55, text: "Set 4" }
+      ]
+    },
+    B: {
+      name: "2 Cleans + 1 Split Jerk",
+      notes: "클린은 터치앤고(Touch-and-Go)로 끊김없이 수행. 77~80%에서 출발하여 당일 성공적인 무거운 세트로 최대화.",
+      sets: [
+        { percent: 77, text: "Set 1 (77-80%)" },
+        { percent: 80, text: "Set 2" },
+        { percent: 83, text: "Set 3" },
+        { percent: 86, text: "Set 4" },
+        { percent: 90, text: "Set 5 (최종 당일 최고 중량)" }
+      ]
+    }
+  },
+  8: {
+    A: {
+      name: "2 Hang Squat Cleans + 2 Front Squats + 2 Split Jerks (Every 2 mins for 8 mins)",
+      notes: "50%에서 시작해 매 세트 증량. 컴플렉스는 언브로큰으로 수행하되 너무 서두르지 말고 동작 간 호흡. 최대 70% 제한.",
+      sets: [
+        { percent: 50, text: "Set 1 (50%)" },
+        { percent: 57, text: "Set 2" },
+        { percent: 64, text: "Set 3" },
+        { percent: 70, text: "Set 4 (최대 70% 제어)" }
+      ]
+    },
+    B: {
+      name: "Clean & Jerk Singles (Rest-Controlled Peak)",
+      notes: "터치앤고 금지. 실수 없는 성취가 목표. 세트별 적합한 휴식 시간(2~3분) 준수.",
+      sets: [
+        { percent: 75, text: "1x2 Reps @ 75% 1RM" },
+        { percent: 80, text: "1x1 Rep @ 80% 1RM" },
+        { percent: 80, text: "1x1 Rep @ 80% 1RM" },
+        { percent: 85, text: "1x1 Rep @ 85% 1RM (2분 휴식)" },
+        { percent: 85, text: "1x1 Rep @ 85% 1RM (2분 휴식)" },
+        { percent: 87, text: "1x1 Rep @ 87%+ 1RM (3분 휴식)" },
+        { percent: 89, text: "1x1 Rep @ 87%+ 1RM (3분 휴식)" },
+        { percent: 91, text: "1x1 Rep @ 87%+ 1RM (3분 휴식)" }
+      ]
+    }
+  },
+  9: {
+    A: {
+      name: "3 Muscle Cleans + 2 Front Squats + 1 Push Press (Every 1:15 for 6:15)",
+      notes: "40%부터 가볍고 견고하게 언브로큰 컴플렉스로 점진적 증량 수행.",
+      sets: [
+        { percent: 40, text: "Set 1 (40%)" },
+        { percent: 44, text: "Set 2" },
+        { percent: 48, text: "Set 3" },
+        { percent: 52, text: "Set 4" },
+        { percent: 56, text: "Set 5" }
+      ]
+    },
+    B: {
+      name: "Clean & Jerk 1-1-1-1-1 & Every 2m 4 sets",
+      notes: "우선 90-92% 1RM 수준까지 싱글로 무겁게 빌드업 진행 후 -> 2분마다 총 4세트 고정 85% 기술 유지 훈련.",
+      sets: [
+        { percent: 80, text: "Build-up Set 1 (80%)" },
+        { percent: 85, text: "Build-up Set 2 (85%)" },
+        { percent: 90, text: "Build-up Set 3 (90%)" },
+        { percent: 92, text: "Build-up Set 4 (92% 도달)" },
+        { percent: 85, text: "EMOM Set 1 @ 85% (테크닉 포커스)" },
+        { percent: 85, text: "EMOM Set 2 @ 85%" },
+        { percent: 85, text: "EMOM Set 3 @ 85%" },
+        { percent: 85, text: "EMOM Set 4 @ 85%" }
+      ]
+    }
+  },
+  10: {
+    A: {
+      name: "Clean & Jerk : 1 Rep Max (20 mins)",
+      notes: "20분 내 최고 1RM 수립을 위한 선수식 가이디드 빌드업.",
+      sets: [
+        { percent: 55, text: "3~5 Reps @ 50-60% (테크닉 준비)" },
+        { percent: 68, text: "2~3 Reps @ 65-70%" },
+        { percent: 78, text: "1~2 Reps @ 75-80%" },
+        { percent: 88, text: "1 Rep @ 85-90% (헤비 싱글 시동)" },
+        { percent: 95, text: "1 Rep @ 95% (감도 체크)" },
+        { percent: 100, text: "Max Attempt (100%+ 당일 최고기록)" }
+      ]
+    },
+    B: {
+      name: "1 Squat Clean + 1 Front Squat + 1 Split Jerk (Every 2 mins for 6 mins)",
+      notes: "새롭게 수립한 1RM의 엄격히 통제된 80%로 피로 상황에서의 훈련 테크닉 다이얼링.",
+      sets: [
+        { percent: 80, text: "Set 1 (80% NEW 1RM)" },
+        { percent: 80, text: "Set 2 (80% NEW 1RM)" },
+        { percent: 80, text: "Set 3 (80% NEW 1RM)" }
+      ]
+    }
+  }
+};
+
+const FRONT_SQUAT_PROGRAM = {
+  1: {
+    A: {
+      name: "Front Squat Volume Builder",
+      notes: "세트 간 정밀하게 3분 휴식 적용. 하체 템포 유지 및 골반 안정화.",
+      sets: [
+        { percent: 60, text: "10 Reps @ 60%" },
+        { percent: 60, text: "10 Reps @ 60%" },
+        { percent: 65, text: "10 Reps @ 65%" },
+        { percent: 70, text: "10 Reps @ 70%" }
+      ]
+    }
+  },
+  2: {
+    A: {
+      name: "Front Squat Step Loading",
+      notes: "최대 4분까지 세트간 휴식 가능하나 가능한 한 심박수가 돌아오면 시작.",
+      sets: [
+        { percent: 60, text: "12 Reps @ 60%" },
+        { percent: 67, text: "10 Reps @ 67%" },
+        { percent: 70, text: "8 Reps @ 70%" },
+        { percent: 72, text: "8 Reps @ 72%" }
+      ]
+    }
+  },
+  3: {
+    A: {
+      name: "Front Squat Progressive Accumulation",
+      notes: "세트 간 최대 4분 휴식. 65+%와 70+%는 컨디션에 맞춰 2~3% 추가 증량 가능.",
+      sets: [
+        { percent: 65, text: "10 Reps @ 65%" },
+        { percent: 67, text: "10 Reps @ 65+%" },
+        { percent: 70, text: "10 Reps @ 70%" },
+        { percent: 73, text: "10 Reps @ 70+%" }
+      ]
+    }
+  },
+  4: {
+    A: {
+      name: "Front Squat 10RM Builder",
+      notes: "15분 내로 10RM(10회 가능한 최대 무게) 측정 완료 -> 이후 10RM의 90%로 3세트의 7-8회 진행. (세트간 3-4분 휴식)",
+      sets: [
+        { percent: 75, text: "10RM Max Build-up (최종 최대 10렙 세트)" },
+        { percent: 68, text: "Back-off Set 1: 7-8 Reps @ 90% of 10RM" },
+        { percent: 68, text: "Back-off Set 2: 7-8 Reps @ 90% of 10RM" },
+        { percent: 68, text: "Back-off Set 3: 7-8 Reps @ 90% of 10RM" }
+      ]
+    }
+  },
+  5: {
+    A: {
+      name: "Front Squat Pyramidal Intention",
+      notes: "정확한 4분 휴식 엄수. 고중량 스쿼트 적응 단계.",
+      sets: [
+        { percent: 60, text: "12 Reps @ 60%" },
+        { percent: 70, text: "10 Reps @ 70%" },
+        { percent: 75, text: "8 Reps @ 75%" },
+        { percent: 80, text: "6 Reps @ 80%" }
+      ]
+    }
+  },
+  6: {
+    A: {
+      name: "Front Squat EMOM-Style Heavy 8s",
+      notes: "3분마다 총 4세트 수행. 1RM의 70%에서 출발해 매 라운드 중량을 도전적으로 올리기.",
+      sets: [
+        { percent: 70, text: "8 Reps @ 70% (시작 세트)" },
+        { percent: 73, text: "8 Reps @ Challenging load" },
+        { percent: 76, text: "8 Reps @ Challenging load" },
+        { percent: 80, text: "8 Reps @ Heavy Challenging load" }
+      ]
+    }
+  },
+  7: {
+    A: {
+      name: "Front Squat Deep Strength Drive",
+      notes: "세트 간 4분 휴식 보장. 완벽한 깊이와 상체 수직 각 유지가 핵심.",
+      sets: [
+        { percent: 70, text: "8 Reps @ 70%" },
+        { percent: 70, text: "8 Reps @ 70%" },
+        { percent: 80, text: "6 Reps @ 80%" },
+        { percent: 83, text: "6 Reps @ 80%+ (당일 무거운 세트)" }
+      ]
+    }
+  },
+  8: {
+    A: {
+      name: "Front Squat Establish 10RM (20 mins)",
+      notes: "20분 이내 최고의 10RM 달성. 1RM의 대략 78~80% 타겟 수준으로 빌드업.",
+      sets: [
+        { percent: 70, text: "Build up Set 1: 3-5 reps" },
+        { percent: 75, text: "Build up Set 2: 3-5 reps" },
+        { percent: 78, text: "10RM Attempt 1: 10 reps" },
+        { percent: 80, text: "10RM Target Max Attempt: 10 reps @ 78-80%" }
+      ]
+    }
+  },
+  9: {
+    A: {
+      name: "Front Squat Establish 1RM (20 mins)",
+      notes: "최강의 하체 훈련 주기 완성. 20분 내 1RM 리테스트.",
+      sets: [
+        { percent: 60, text: "Warm-up Set: 3 reps" },
+        { percent: 75, text: "Build-up Set: 2 reps" },
+        { percent: 85, text: "Single Attempt: 1 rep" },
+        { percent: 95, text: "Peak Setup: 1 rep" },
+        { percent: 100, text: "New 1RM Attempt (100%+)" }
+      ]
+    }
+  }
+};
+
+const DEFAULT_GYMNASTICS_MOVEMENTS = [
+  { id: 'pullup', ko: '풀업 (Pull-up)', key: 'Pull-up' },
+  { id: 'c2b', ko: '체스트 투 바 (C2B Pull-up)', key: 'Chest-to-Bar' },
+  { id: 'bmu', ko: '바 머슬업 (Bar Muscle-up)', key: 'Bar Muscle-up' },
+  { id: 'rmu', ko: '링 머슬업 (Ring Muscle-up)', key: 'Ring Muscle-up' },
+  { id: 'hspu', ko: '핸드스탠드 푸쉬업 (HSPU)', key: 'Handstand Push-up' },
+  { id: 'hsw', ko: '핸드스탠드 워크 (Handstand Walk)', key: 'Handstand Walk (ft)' },
+  { id: 't2b', ko: '토즈 투 바 (Toes-to-Bar)', key: 'Toes-to-Bar' },
+  { id: 'pistol', ko: '피스톨 스쿼트 (Pistol)', key: 'Pistol Squat' },
+  { id: 'du', ko: '더블 언더 (Double Under)', key: 'Double Under' },
+  { id: 'rope', ko: '로프 클라임 (Rope Climb)', key: 'Rope Climb' },
+  { id: 'ringdip', ko: '링 딥 (Ring Dip)', key: 'Ring Dip' },
+  { id: 'lsit', ko: '엘싯 (L-Sit)', key: 'L-Sit (sec)' }
+];
+
+// ==========================================
+// 2. 브라우저 보안 제약 안전 유틸리티
+// ==========================================
+
+const safeGetLocalStorage = (key, fallback) => {
+  try {
+    const item = window.localStorage.getItem(key);
+    return item ? JSON.parse(item) : fallback;
+  } catch (e) {
+    console.warn("LocalStorage 접근 권한이 제한되었습니다. 임시 메모리 세션을 사용합니다.", e);
+    return fallback;
+  }
+};
+
+const safeSetLocalStorage = (key, value) => {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    // 샌드박스 보안 예외 시 자동 경고 억제
+  }
+};
+
+// ==========================================
+// 3. 메인 리액트 컴포넌트
+// ==========================================
+
+export default function App() {
+  // --- 상태 관리 ---
+  const [activeTab, setActiveTab] = useState('dashboard');
+  
+  // 1RM 값 (Lbs 기준)
+  const [oneRM, setOneRM] = useState(() => safeGetLocalStorage('hg_athlete_oneRM', {
+    snatch: 135,
+    cleanJerk: 185,
+    frontSquat: 225,
+    backSquat: 275,
+    deadlift: 315,
+    overheadPress: 115
+  }));
+
+  // 역도 프로그램 상태 관리
+  const [wlMovement, setWlMovement] = useState('snatch');
+  const [wlWeek, setWlWeek] = useState(1);
+  
+  const [wlCheckedSets, setWlCheckedSets] = useState(() => 
+    safeGetLocalStorage('hg_athlete_wlChecks', {})
+  );
+
+  // 스트렝스 훈련 상태 관리
+  const [strMovement, setStrMovement] = useState('backSquat');
+  const [strWeek, setStrWeek] = useState(1);
+  
+  const [strCheckedSets, setStrCheckedSets] = useState(() => 
+    safeGetLocalStorage('hg_athlete_strChecks', {})
+  );
+
+  // 체조 동작 목록 상태 (동적 추가/삭제 대응)
+  const [gymMovements, setGymMovements] = useState(() =>
+    safeGetLocalStorage('hg_athlete_gymMovements', DEFAULT_GYMNASTICS_MOVEMENTS)
+  );
+
+  // 체조 파트 상태 관리
+  const [gymMaxReps, setGymMaxReps] = useState(() => safeGetLocalStorage('hg_athlete_gymMax', {
+    pullup: 30,
+    c2b: 22,
+    bmu: 12,
+    rmu: 8,
+    hspu: 25,
+    hsw: 50,
+    t2b: 28,
+    pistol: 40,
+    du: 120,
+    rope: 5,
+    ringdip: 20,
+    lsit: 35
+  }));
+
+  const [gymSelected, setGymSelected] = useState(() => 
+    safeGetLocalStorage('hg_athlete_gymSelected', ['bmu', 't2b'])
+  );
+
+  // 체조 동작 추가 폼 필드 상태
+  const [newGymName, setNewGymName] = useState('');
+  const [newGymMax, setNewGymMax] = useState(10);
+  const [showGymMinWarning, setShowGymMinWarning] = useState(false);
+
+  // 바벨 타입 선택 (45 lbs vs 35 lbs)
+  const [barbellWeight, setBarbellWeight] = useState(45);
+
+  // EMOM 타이머 상태
+  const [timerActive, setTimerActive] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(600); // 10 minutes = 600s
+  const [currentMinute, setCurrentMinute] = useState(1);
+
+  // 1RM 인풋 변화 핸들러
+  const handleOneRMChange = (field, value) => {
+    const updated = { ...oneRM, [field]: Number(value) || 0 };
+    setOneRM(updated);
+    safeSetLocalStorage('hg_athlete_oneRM', updated);
+  };
+
+  // 체조 Unbroken 기록 변경 핸들러
+  const handleGymMaxChange = (id, value) => {
+    const updated = { ...gymMaxReps, [id]: Number(value) || 0 };
+    setGymMaxReps(updated);
+    safeSetLocalStorage('hg_athlete_gymMax', updated);
+  };
+
+  // 체조 동작 추가 핸들러
+  const handleAddGymnastic = (e) => {
+    e.preventDefault();
+    if (!newGymName.trim()) return;
+
+    const newId = `custom_${Date.now()}`;
+    const newMovement = {
+      id: newId,
+      ko: newGymName.trim(),
+      key: newGymName.trim()
+    };
+
+    const updatedMovements = [...gymMovements, newMovement];
+    setGymMovements(updatedMovements);
+    safeSetLocalStorage('hg_athlete_gymMovements', updatedMovements);
+
+    const updatedMax = { ...gymMaxReps, [newId]: Number(newGymMax) || 0 };
+    setGymMaxReps(updatedMax);
+    safeSetLocalStorage('hg_athlete_gymMax', updatedMax);
+
+    setNewGymName('');
+    setNewGymMax(10);
+    setShowGymMinWarning(false);
+  };
+
+  // 체조 동작 삭제 핸들러
+  const handleDeleteGymnastic = (id) => {
+    if (gymMovements.length <= 2) {
+      setShowGymMinWarning(true);
+      return;
+    }
+
+    const updatedMovements = gymMovements.filter(m => m.id !== id);
+    setGymMovements(updatedMovements);
+    safeSetLocalStorage('hg_athlete_gymMovements', updatedMovements);
+
+    // 삭제된 종목이 현재 뽑혀 있다면 대체 처리
+    if (gymSelected.includes(id)) {
+      const remainingIds = updatedMovements.map(m => m.id);
+      const nextSelection = [remainingIds[0], remainingIds[1] || remainingIds[0]];
+      setGymSelected(nextSelection);
+      safeSetLocalStorage('hg_athlete_gymSelected', nextSelection);
+    }
+    setShowGymMinWarning(false);
+  };
+
+  // 1RM 기반 5RM 계산 공식 (Epley 공식을 크로스핏 선수에 정밀 세팅: 1RM * 0.87)
+  const calculate5RM = (oneRmValue) => {
+    return Math.round(oneRmValue * 0.87);
+  };
+
+  // 바벨 플레이트 계산 알고리즘 (lbs 원판 양쪽 동일 배치 기준)
+  const calculatePlates = (targetWeight) => {
+    const bar = barbellWeight;
+    if (targetWeight <= bar) return [];
+    let remaining = (targetWeight - bar) / 2;
+    const availablePlates = [45, 35, 25, 15, 10, 5, 2.5];
+    const plates = [];
+    
+    for (let plate of availablePlates) {
+      while (remaining >= plate) {
+        plates.push(plate);
+        remaining -= plate;
+      }
+    }
+    return plates;
+  };
+
+  // 플레이트 컬러 클래스 반환
+  const getPlateColorClass = (plate) => {
+    switch(plate) {
+      case 45: return 'bg-red-600 border-red-700 text-white';
+      case 35: return 'bg-blue-600 border-blue-700 text-white';
+      case 25: return 'bg-yellow-500 border-yellow-600 text-black';
+      case 15: return 'bg-orange-500 border-orange-600 text-black';
+      case 10: return 'bg-green-600 border-green-700 text-white';
+      case 5: return 'bg-zinc-400 border-zinc-500 text-black';
+      case 2.5: return 'bg-zinc-600 border-zinc-700 text-white';
+      default: return 'bg-zinc-500 border-zinc-600 text-white';
+    }
+  };
+
+  // 역도 프로그램 체크 상태 토글
+  const toggleWlCheck = (key) => {
+    const updated = { ...wlCheckedSets, [key]: !wlCheckedSets[key] };
+    setWlCheckedSets(updated);
+    safeSetLocalStorage('hg_athlete_wlChecks', updated);
+  };
+
+  // 스트렝스 프로그램 체크 상태 토글
+  const toggleStrCheck = (key) => {
+    const updated = { ...strCheckedSets, [key]: !strCheckedSets[key] };
+    setStrCheckedSets(updated);
+    safeSetLocalStorage('hg_athlete_strChecks', updated);
+  };
+
+  // 체조 동작 랜덤 2가지 뽑기 (사용자가 편집한 목록 기준)
+  const pickRandomGymnastics = () => {
+    if (gymMovements.length < 2) return;
+    const shuffled = [...gymMovements].sort(() => 0.5 - Math.random());
+    const selected = [shuffled[0].id, shuffled[1].id];
+    setGymSelected(selected);
+    safeSetLocalStorage('hg_athlete_gymSelected', selected);
+  };
+
+  // --- EMOM 10분 타이머 훅 ---
+  useEffect(() => {
+    let interval = null;
+    if (timerActive && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft((prev) => {
+          const nextTime = prev - 1;
+          const currentMin = 10 - Math.floor(nextTime / 60);
+          setCurrentMinute(currentMin > 10 ? 10 : currentMin);
+          
+          if (nextTime > 0 && nextTime % 60 === 0) {
+            playBeep(880, 400); // 1분 도달 알림음
+          } else if (nextTime <= 3 && nextTime > 0) {
+            playBeep(440, 80); // 3초 카운트다운 신호
+          }
+          return nextTime;
+        });
+      }, 1000);
+    } else if (timeLeft === 0) {
+      setTimerActive(false);
+      playBeep(1200, 800); // 완수 알림음
+    }
+    return () => clearInterval(interval);
+  }, [timerActive, timeLeft]);
+
+  // 비프음 생성 오디오 신디사이저 (모바일 오디오 세션 차단 오류 완벽 우회 처리)
+  const playBeep = (freq, duration) => {
+    try {
+      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtxClass) return;
+      
+      const audioCtx = new AudioCtxClass();
+      if (audioCtx.state === 'suspended') {
+        // 모바일 터치 자동재생 해제 제약조건 충족 시도
+        audioCtx.resume();
+      }
+      
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      oscillator.type = 'sine';
+      oscillator.frequency.value = freq;
+      gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      oscillator.start();
+      
+      setTimeout(() => {
+        try {
+          oscillator.stop();
+          audioCtx.close();
+        } catch (innerErr) {}
+      }, duration);
+    } catch (e) {
+      // 오디오 미지원 모바일 웹뷰 대응용 무음 에러 트랩
+    }
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // 역도 프로그램 데이터 추출 함수
+  const getWlData = () => {
+    if (wlMovement === 'snatch') {
+      return SNATCH_PROGRAM[wlWeek] || null;
+    } else if (wlMovement === 'cleanJerk') {
+      return CLEAN_JERK_PROGRAM[wlWeek] || null;
+    } else {
+      return FRONT_SQUAT_PROGRAM[wlWeek] || null;
+    }
+  };
+
+  // 스트렝스 펜들레이 사이클 세트 반환
+  const getStrData = () => {
+    const cycle = {
+      1: { percent: 86, setsCount: 5, reps: 5, note: "85~88% 5RM 조율 세트 (5x5)" },
+      2: { percent: 90, setsCount: 5, reps: 5, note: "엄격한 5x5 @ 90% 5RM" },
+      3: { percent: 93, setsCount: 4, reps: 5, note: "집중된 볼륨 축소 4x5 @ 93% 5RM" },
+      4: { percent: 96, setsCount: 3, reps: 5, note: "고중량 적응 3x5 @ 96% 5RM" },
+      5: { percent: 98, setsCount: 2, reps: 5, note: "피크 도달 직전 2x5 @ 98% 5RM" },
+      6: { percent: 101, setsCount: 2, reps: 5, note: "수행 능력 초과 2x5 @ 101% 5RM (새로운 5RM 도달 도전)" }
+    };
+    return cycle[strWeek] || cycle[1];
+  };
+
+  return (
+    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans select-none antialiased">
+      
+      {/* --- CF Training by HG 브랜드 헤더 --- */}
+      <header className="sticky top-0 z-50 bg-neutral-900/90 backdrop-blur-md border-b border-neutral-800 px-4 py-4 flex justify-between items-center">
+        <div className="flex items-center gap-2.5">
+          <div className="bg-lime-500 text-neutral-950 px-2.5 py-1 rounded font-black tracking-tighter text-xs md:text-sm uppercase shadow-sm">
+            CF Training by HG
+          </div>
+          <span className="hidden sm:inline-block text-xs font-semibold text-neutral-400 tracking-wider">
+            ATHLETE JOURNAL
+          </span>
+        </div>
+
+        {/* 퀵 설정 바 */}
+        <div className="flex items-center gap-3">
+          <div className="flex bg-neutral-950 rounded p-0.5 border border-neutral-800 text-xs">
+            <button 
+              onClick={() => setBarbellWeight(45)} 
+              className={`px-2.5 py-1 rounded transition-all font-bold ${barbellWeight === 45 ? 'bg-lime-500 text-neutral-950' : 'text-neutral-400 hover:text-neutral-200'}`}
+            >
+              45lb Bar
+            </button>
+            <button 
+              onClick={() => setBarbellWeight(35)} 
+              className={`px-2.5 py-1 rounded transition-all font-bold ${barbellWeight === 35 ? 'bg-lime-500 text-neutral-950' : 'text-neutral-400 hover:text-neutral-200'}`}
+            >
+              35lb Bar
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* --- 메인 콘텐츠 허브 --- */}
+      <main className="flex-1 max-w-5xl w-full mx-auto p-4 md:p-6 flex flex-col justify-start">
+        
+        {/* ==========================================
+            TAB A. PORTAL / DASHBOARD (메인 포털 페이지)
+            ========================================== */}
+        {activeTab === 'dashboard' && (
+          <div className="flex flex-col gap-6 w-full">
+            
+            {/* 프로필 웰컴 배너 */}
+            <div className="bg-gradient-to-br from-neutral-900 via-neutral-900 to-neutral-950 border border-neutral-800 rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-lg">
+              <div className="absolute top-0 right-0 w-48 h-48 bg-lime-500/10 rounded-full blur-3xl"></div>
+              
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-lime-500 to-emerald-500 text-neutral-950 flex items-center justify-center text-2xl font-black shadow-md shadow-lime-500/20">
+                    HG
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black text-white tracking-tight">김현근 선수님</h2>
+                    <p className="text-sm text-neutral-400 mt-1">오늘의 와드 및 전용 훈련 프로그램을 최적화하여 기록하세요.</p>
+                  </div>
+                </div>
+                <div className="bg-neutral-950/80 border border-neutral-800 px-4 py-2.5 rounded-2xl text-xs flex flex-col gap-1 w-full sm:w-auto">
+                  <span className="text-neutral-500 font-bold block text-center sm:text-left">훈련 요약 현황</span>
+                  <div className="flex justify-between gap-6">
+                    <div>역도완료: <span className="text-lime-400 font-bold">{Object.values(wlCheckedSets).filter(Boolean).length}</span></div>
+                    <div>스트렝스완료: <span className="text-lime-400 font-bold">{Object.values(strCheckedSets).filter(Boolean).length}</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 깔끔한 페이지 진입 네비게이션 카드 그리드 */}
+            <div>
+              <h3 className="text-xs font-black tracking-widest text-neutral-500 uppercase mb-4 px-1">TRAINING CHANNELS</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                {/* 1. Olympic Lift 카드 */}
+                <button 
+                  onClick={() => setActiveTab('weights')}
+                  className="bg-neutral-900 hover:bg-neutral-900/60 border border-neutral-800 hover:border-lime-500/30 rounded-2xl p-6 text-left transition-all duration-300 group shadow-md"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="w-12 h-12 bg-neutral-950 rounded-xl flex items-center justify-center text-xl border border-neutral-800 group-hover:border-lime-500/20">
+                      🏋️‍♂️
+                    </div>
+                    <span className="text-xs text-lime-400 font-black group-hover:underline">훈련하기 &rarr;</span>
+                  </div>
+                  <h4 className="text-lg font-bold text-white group-hover:text-lime-400 transition-colors">역도 (Olympic Lift)</h4>
+                  <p className="text-xs text-neutral-400 mt-2 leading-relaxed">
+                    스내치(SN), 클린&저크(CJ), 프론트스쿼트(FS)의 10주 정밀 공식 루틴 및 세트당 개별 마크, 원판 도식 계산.
+                  </p>
+                </button>
+
+                {/* 2. Pendlay Strength 카드 */}
+                <button 
+                  onClick={() => setActiveTab('strength')}
+                  className="bg-neutral-900 hover:bg-neutral-900/60 border border-neutral-800 hover:border-lime-500/30 rounded-2xl p-6 text-left transition-all duration-300 group shadow-md"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="w-12 h-12 bg-neutral-950 rounded-xl flex items-center justify-center text-xl border border-neutral-800 group-hover:border-lime-500/20">
+                      💪
+                    </div>
+                    <span className="text-xs text-lime-400 font-black group-hover:underline">훈련하기 &rarr;</span>
+                  </div>
+                  <h4 className="text-lg font-bold text-white group-hover:text-lime-400 transition-colors">스트렝스 (Pendlay Cycle)</h4>
+                  <p className="text-xs text-neutral-400 mt-2 leading-relaxed">
+                    백스쿼트(BS), 데드리프트(DL), 오버헤드프레스(OHP)의 5RM 강도 설계에 기반한 완벽한 6주 펜들레이 완성 루프.
+                  </p>
+                </button>
+
+                {/* 3. Gymnastics EMOM 카드 */}
+                <button 
+                  onClick={() => setActiveTab('gymnastics')}
+                  className="bg-neutral-900 hover:bg-neutral-900/60 border border-neutral-800 hover:border-lime-500/30 rounded-2xl p-6 text-left transition-all duration-300 group shadow-md"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="w-12 h-12 bg-neutral-950 rounded-xl flex items-center justify-center text-xl border border-neutral-800 group-hover:border-lime-500/20">
+                      🤸‍♂️
+                    </div>
+                    <span className="text-xs text-lime-400 font-black group-hover:underline">훈련하기 &rarr;</span>
+                  </div>
+                  <h4 className="text-lg font-bold text-white group-hover:text-lime-400 transition-colors">체조 (Gymnastics EMOM)</h4>
+                  <p className="text-xs text-neutral-400 mt-2 leading-relaxed">
+                    자유로운 체조 동작 추가/삭제 목록 커스텀 가능. 10분 EMOM 인터벌과 함께 연동되어 역동적인 훈련을 추적합니다.
+                  </p>
+                </button>
+
+                {/* 4. 1RM Profile 카드 */}
+                <button 
+                  onClick={() => setActiveTab('onerm')}
+                  className="bg-neutral-900 hover:bg-neutral-900/60 border border-neutral-800 hover:border-lime-500/30 rounded-2xl p-6 text-left transition-all duration-300 group shadow-md"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="w-12 h-12 bg-neutral-950 rounded-xl flex items-center justify-center text-xl border border-neutral-800 group-hover:border-lime-500/20">
+                      📊
+                    </div>
+                    <span className="text-xs text-lime-400 font-black group-hover:underline">관리하기 &rarr;</span>
+                  </div>
+                  <h4 className="text-lg font-bold text-white group-hover:text-lime-400 transition-colors">1RM / 기록 입력 시트</h4>
+                  <p className="text-xs text-neutral-400 mt-2 leading-relaxed">
+                    훈련 중량의 핵심 베이스인 종목별 1RM 기록 보드. 입력 시 과학적 5RM 환산 수치 자동 탑재.
+                  </p>
+                </button>
+
+              </div>
+            </div>
+
+            {/* 신속 핵심 1RM 뷰 */}
+            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
+              <span className="text-[10px] text-neutral-500 font-black tracking-widest block uppercase mb-3">CURRENT PROFILE BESTS (HG)</span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 text-center">
+                  <span className="text-[10px] text-neutral-500 block">SNATCH</span>
+                  <span className="text-sm font-extrabold text-lime-400">{oneRM.snatch} lb</span>
+                </div>
+                <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 text-center">
+                  <span className="text-[10px] text-neutral-500 block">CLEAN & JERK</span>
+                  <span className="text-sm font-extrabold text-lime-400">{oneRM.cleanJerk} lb</span>
+                </div>
+                <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 text-center">
+                  <span className="text-[10px] text-neutral-500 block">FRONT SQUAT</span>
+                  <span className="text-sm font-extrabold text-lime-400">{oneRM.frontSquat} lb</span>
+                </div>
+                <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 text-center">
+                  <span className="text-[10px] text-neutral-500 block">BACK SQUAT</span>
+                  <span className="text-sm font-extrabold text-white">{oneRM.backSquat} lb</span>
+                </div>
+                <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 text-center">
+                  <span className="text-[10px] text-neutral-500 block">DEADLIFT</span>
+                  <span className="text-sm font-extrabold text-white">{oneRM.deadlift} lb</span>
+                </div>
+                <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 text-center">
+                  <span className="text-[10px] text-neutral-500 block">OH PRESS</span>
+                  <span className="text-sm font-extrabold text-white">{oneRM.overheadPress} lb</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* ==========================================
+            TAB B. WEIGHTLIFTING (역도 프로그램 페이지)
+            ========================================== */}
+        {activeTab === 'weights' && (
+          <div className="flex flex-col gap-6 w-full">
+            
+            {/* 상단 통합 뒤로가기 바 */}
+            <div className="flex items-center justify-between">
+              <button 
+                onClick={() => setActiveTab('dashboard')}
+                className="flex items-center gap-2 text-xs font-black text-lime-400 hover:text-white bg-neutral-900 border border-neutral-800 hover:border-neutral-700 px-3.5 py-2 rounded-xl transition-all"
+              >
+                &larr; 메인 대시보드
+              </button>
+              <span className="text-xs font-bold text-neutral-500">OLYMPIC WEIGHTLIFTING</span>
+            </div>
+
+            {/* 종목 및 주차 셀렉터 전용 컨트롤 섹션 */}
+            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 flex flex-col md:flex-row justify-between gap-4 items-center">
+              {/* 종목선택 */}
+              <div className="flex bg-neutral-950 p-1 rounded-xl border border-neutral-800 w-full md:w-auto">
+                <button 
+                  onClick={() => { setWlMovement('snatch'); setWlWeek(1); }}
+                  className={`flex-1 md:flex-none px-4 py-2.5 rounded-lg text-xs font-black transition-all ${wlMovement === 'snatch' ? 'bg-lime-500 text-neutral-950' : 'text-neutral-400 hover:text-white'}`}
+                >
+                  SNATCH
+                </button>
+                <button 
+                  onClick={() => { setWlMovement('cleanJerk'); setWlWeek(1); }}
+                  className={`flex-1 md:flex-none px-4 py-2.5 rounded-lg text-xs font-black transition-all ${wlMovement === 'cleanJerk' ? 'bg-lime-500 text-neutral-950' : 'text-neutral-400 hover:text-white'}`}
+                >
+                  CLEAN & JERK
+                </button>
+                <button 
+                  onClick={() => { setWlMovement('frontSquat'); setWlWeek(1); }}
+                  className={`flex-1 md:flex-none px-4 py-2.5 rounded-lg text-xs font-black transition-all ${wlMovement === 'frontSquat' ? 'bg-lime-500 text-neutral-950' : 'text-neutral-400 hover:text-white'}`}
+                >
+                  FRONT SQUAT
+                </button>
+              </div>
+
+              {/* 주차선택 */}
+              <div className="flex items-center gap-2.5 w-full md:w-auto justify-end">
+                <span className="text-xs text-neutral-400 font-bold">주차 선택:</span>
+                <select 
+                  value={wlWeek} 
+                  onChange={(e) => setWlWeek(Number(e.target.value))}
+                  className="bg-neutral-950 border border-neutral-800 rounded-xl text-xs font-bold text-white p-2.5 outline-none focus:border-lime-500 w-32"
+                >
+                  {[...Array(wlMovement === 'frontSquat' ? 9 : 10).keys()].map(i => (
+                    <option key={i+1} value={i+1}>Week {i+1}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* 주차 프로그램 렌더링 구동 */}
+            {getWlData() ? (
+              <div className="flex flex-col gap-6">
+                {Object.keys(getWlData()).map((partKey) => {
+                  const part = getWlData()[partKey];
+                  const active1RM = wlMovement === 'snatch' ? oneRM.snatch : (wlMovement === 'cleanJerk' ? oneRM.cleanJerk : oneRM.frontSquat);
+                  
+                  return (
+                    <div key={partKey} className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-xl">
+                      {/* 파트 정보 헤더 */}
+                      <div className="bg-neutral-950 px-5 py-4 border-b border-neutral-800/60 flex justify-between items-start md:items-center flex-col md:flex-row gap-3">
+                        <div>
+                          <span className="bg-lime-500/10 text-lime-400 border border-lime-500/20 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider block w-max mb-1.5">
+                            PART {partKey}
+                          </span>
+                          <h3 className="text-base font-bold text-white tracking-tight">{part.name}</h3>
+                        </div>
+                        <div className="text-xs font-bold text-neutral-400 bg-neutral-900 border border-neutral-800 px-3 py-1.5 rounded-lg whitespace-nowrap">
+                          기준 1RM: <span className="text-lime-400 font-extrabold">{active1RM}lb</span>
+                        </div>
+                      </div>
+
+                      {/* 가이드 노티스 */}
+                      <div className="bg-neutral-950/40 p-4 border-b border-neutral-800/40 text-xs text-neutral-400">
+                        <span className="font-bold text-neutral-300 block mb-1">📝 Workout Guide</span>
+                        {part.notes}
+                      </div>
+
+                      {/* 한 세트당 완벽히 한 칸씩 보여주기 구현 */}
+                      <div className="p-4 flex flex-col gap-3">
+                        {part.sets.map((set, idx) => {
+                          const setKey = `${wlMovement}-${wlWeek}-${partKey}-${idx}`;
+                          const isChecked = !!wlCheckedSets[setKey];
+                          
+                          // 1RM 기준 무게 계산 (Lbs)
+                          const calculatedLbs = Math.round(active1RM * (set.percent / 100));
+                          const plates = calculatePlates(calculatedLbs);
+
+                          return (
+                            <div 
+                              key={idx}
+                              className={`flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl border transition-all ${isChecked ? 'bg-neutral-950/60 border-lime-500/10 opacity-40' : 'bg-neutral-950 border-neutral-800 hover:border-neutral-700'}`}
+                            >
+                              {/* 1. 체크 박스 및 세트 */}
+                              <div className="flex items-center gap-3.5">
+                                <button 
+                                  onClick={() => toggleWlCheck(setKey)}
+                                  className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${isChecked ? 'bg-lime-500 text-neutral-950 font-black shadow-lg shadow-lime-500/20' : 'border border-neutral-700 hover:border-lime-500 bg-neutral-900'}`}
+                                >
+                                  {isChecked && (
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  )}
+                                </button>
+                                <div>
+                                  <span className="text-[10px] text-neutral-500 block font-bold">SET {idx + 1}</span>
+                                  <span className="text-sm font-semibold text-white">{set.text || `${set.percent}% 1RM`}</span>
+                                </div>
+                              </div>
+
+                              {/* 2. 대상 목표 중량 */}
+                              <div className="flex flex-col items-start md:items-end">
+                                <span className="text-[10px] text-neutral-500 font-bold">TARGET WEIGHT</span>
+                                <span className="text-base font-extrabold text-lime-400">
+                                  {calculatedLbs} <span className="text-xs text-neutral-400">lbs</span>
+                                </span>
+                              </div>
+
+                              {/* 3. 플레이트 양방향 배치 시뮬레이터 */}
+                              <div className="flex flex-col gap-1.5 md:w-1/3">
+                                <span className="text-[10px] text-neutral-500 font-bold block">PLATE CONFIGURATION (PER SIDE)</span>
+                                <div className="flex flex-wrap items-center gap-1 min-h-[24px]">
+                                  {plates.length > 0 ? (
+                                    plates.map((p, pidx) => (
+                                      <span 
+                                        key={pidx} 
+                                        className={`text-[9px] font-black border px-1.5 py-0.5 rounded ${getPlateColorClass(p)}`}
+                                      >
+                                        {p}
+                                      </span>
+                                    ))
+                                  ) : (
+                                    <span className="text-[10px] text-neutral-600 italic">Empty Bar ({barbellWeight} lbs)</span>
+                                  )}
+                                </div>
+                              </div>
+
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12 bg-neutral-900 border border-neutral-800 rounded-2xl text-neutral-500 text-sm">
+                해당 주차 훈련 데이터가 존재하지 않습니다.
+              </div>
+            )}
+
+          </div>
+        )}
+
+        {/* ==========================================
+            TAB C. STRENGTH (스트렝스 펜들레이 주기 페이지)
+            ========================================== */}
+        {activeTab === 'strength' && (
+          <div className="flex flex-col gap-6 w-full">
+            
+            {/* 상단 통합 뒤로가기 바 */}
+            <div className="flex items-center justify-between">
+              <button 
+                onClick={() => setActiveTab('dashboard')}
+                className="flex items-center gap-2 text-xs font-black text-lime-400 hover:text-white bg-neutral-900 border border-neutral-800 hover:border-neutral-700 px-3.5 py-2 rounded-xl transition-all"
+              >
+                &larr; 메인 대시보드
+              </button>
+              <span className="text-xs font-bold text-neutral-500">PENDLAY CYCLE STRENGTH</span>
+            </div>
+
+            {/* 스트렝스 세팅 바 */}
+            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 flex flex-col md:flex-row justify-between gap-4 items-center">
+              <div className="flex bg-neutral-950 p-1 rounded-xl border border-neutral-800 w-full md:w-auto">
+                <button 
+                  onClick={() => setStrMovement('backSquat')}
+                  className={`flex-1 md:flex-none px-4 py-2.5 rounded-lg text-xs font-black transition-all ${strMovement === 'backSquat' ? 'bg-lime-500 text-neutral-950' : 'text-neutral-400 hover:text-white'}`}
+                >
+                  BACK SQUAT
+                </button>
+                <button 
+                  onClick={() => setStrMovement('deadlift')}
+                  className={`flex-1 md:flex-none px-4 py-2.5 rounded-lg text-xs font-black transition-all ${strMovement === 'deadlift' ? 'bg-lime-500 text-neutral-950' : 'text-neutral-400 hover:text-white'}`}
+                >
+                  DEADLIFT
+                </button>
+                <button 
+                  onClick={() => setStrMovement('overheadPress')}
+                  className={`flex-1 md:flex-none px-4 py-2.5 rounded-lg text-xs font-black transition-all ${strMovement === 'overheadPress' ? 'bg-lime-500 text-neutral-950' : 'text-neutral-400 hover:text-white'}`}
+                >
+                  OVERHEAD PRESS
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2.5 w-full md:w-auto justify-end">
+                <span className="text-xs text-neutral-400 font-bold">훈련 주차:</span>
+                <select 
+                  value={strWeek} 
+                  onChange={(e) => setStrWeek(Number(e.target.value))}
+                  className="bg-neutral-950 border border-neutral-800 rounded-xl text-xs font-bold text-white p-2.5 outline-none focus:border-lime-500 w-32"
+                >
+                  {[1,2,3,4,5,6].map(i => (
+                    <option key={i} value={i}>Week {i}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* 펜들레이 훈련 세션 보드 */}
+            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-xl">
+              <div className="bg-neutral-950 px-5 py-4 border-b border-neutral-800 flex justify-between items-center flex-col md:flex-row gap-3">
+                <div>
+                  <span className="bg-lime-500/10 text-lime-400 border border-lime-500/20 px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider block w-max mb-1.5">
+                    THE PENDLAY STRENGTH
+                  </span>
+                  <h3 className="text-base font-bold text-white uppercase">{strMovement} PENDLAY CYCLE</h3>
+                </div>
+                <div className="text-right flex flex-col items-end">
+                  <span className="text-xs text-neutral-400 font-semibold">1RM: {oneRM[strMovement]} lb</span>
+                  <span className="text-xs text-lime-400 font-bold">5RM 기준: {calculate5RM(oneRM[strMovement])} lb</span>
+                </div>
+              </div>
+
+              {/* 가이드라인 주석 */}
+              <div className="bg-neutral-950/40 p-4 border-b border-neutral-800/40 text-xs text-neutral-400">
+                <span className="font-bold text-neutral-300 block mb-1">📊 Cycle Intensity Guide ({getStrData().note})</span>
+                스트렝스는 Epley 스포츠 과학 공식에 의해 자동 계산된 5RM을 기준으로 타겟 비율을 적용합니다. 한 줄씩 체크하며 운동을 완수하세요.
+              </div>
+
+              {/* 세트 리스트 */}
+              <div className="p-4 flex flex-col gap-3">
+                {[...Array(getStrData().setsCount).keys()].map((idx) => {
+                  const setKey = `${strMovement}-${strWeek}-${idx}`;
+                  const isChecked = !!strCheckedSets[setKey];
+                  
+                  // 5RM 기준으로 무게 연산
+                  const calculated5RMVal = calculate5RM(oneRM[strMovement]);
+                  const calculatedLbs = Math.round(calculated5RMVal * (getStrData().percent / 100));
+                  const plates = calculatePlates(calculatedLbs);
+
+                  return (
+                    <div 
+                      key={idx}
+                      className={`flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl border transition-all ${isChecked ? 'bg-neutral-950/60 border-lime-500/10 opacity-40' : 'bg-neutral-950 border-neutral-800 hover:border-neutral-700'}`}
+                    >
+                      {/* 체크버튼 */}
+                      <div className="flex items-center gap-3.5">
+                        <button 
+                          onClick={() => toggleStrCheck(setKey)}
+                          className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${isChecked ? 'bg-lime-500 text-neutral-950 font-black shadow-lg shadow-lime-500/20' : 'border border-neutral-700 hover:border-lime-500 bg-neutral-900'}`}
+                        >
+                          {isChecked && (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </button>
+                        <div>
+                          <span className="text-[10px] text-neutral-500 block font-bold">SET {idx + 1}</span>
+                          <span className="text-sm font-semibold text-white">{getStrData().reps} Reps @ {getStrData().percent}% of 5RM</span>
+                        </div>
+                      </div>
+
+                      {/* 중량 */}
+                      <div className="flex flex-col items-start md:items-end">
+                        <span className="text-[10px] text-neutral-500 font-bold">TARGET WEIGHT</span>
+                        <span className="text-base font-extrabold text-lime-400">
+                          {calculatedLbs} <span className="text-xs text-neutral-400">lbs</span>
+                        </span>
+                      </div>
+
+                      {/* 원판 */}
+                      <div className="flex flex-col gap-1.5 md:w-1/3">
+                        <span className="text-[10px] text-neutral-500 font-bold block">PLATE CONFIGURATION (PER SIDE)</span>
+                        <div className="flex flex-wrap items-center gap-1 min-h-[24px]">
+                          {plates.length > 0 ? (
+                            plates.map((p, pidx) => (
+                              <span 
+                                key={pidx} 
+                                className={`text-[9px] font-black border px-1.5 py-0.5 rounded ${getPlateColorClass(p)}`}
+                              >
+                                {p}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-[10px] text-neutral-600 italic">Empty Bar ({barbellWeight} lbs)</span>
+                          )}
+                        </div>
+                      </div>
+
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* ==========================================
+            TAB D. GYMNASTICS (체조 트레이닝 & EMOM 타이머)
+            ========================================== */}
+        {activeTab === 'gymnastics' && (
+          <div className="flex flex-col gap-6 w-full animate-fade-in">
+            
+            {/* 상단 통합 뒤로가기 바 */}
+            <div className="flex items-center justify-between">
+              <button 
+                onClick={() => setActiveTab('dashboard')}
+                className="flex items-center gap-2 text-xs font-black text-lime-400 hover:text-white bg-neutral-900 border border-neutral-800 hover:border-neutral-700 px-3.5 py-2 rounded-xl transition-all"
+              >
+                &larr; 메인 대시보드
+              </button>
+              <span className="text-xs font-bold text-neutral-500">GYMNASTICS EMOM TIMER</span>
+            </div>
+
+            {/* 타이머 기구 대형 보드 */}
+            <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 flex flex-col md:flex-row justify-between items-center gap-6 relative overflow-hidden shadow-xl">
+              <div className="absolute top-0 left-0 w-32 h-32 bg-lime-500/5 rounded-full blur-3xl"></div>
+              
+              <div className="text-center md:text-left z-10">
+                <span className="text-lime-500 text-xs font-black tracking-widest block uppercase mb-1.5">EMOM 10 MINS WORKOUT TIMER</span>
+                <div className="text-5xl font-black tracking-tighter text-white font-mono flex items-baseline gap-1">
+                  {formatTime(timeLeft)}
+                  <span className="text-sm font-medium text-neutral-500 font-sans">/ 10:00</span>
+                </div>
+                <div className="mt-3 flex items-center gap-2 justify-center md:justify-start">
+                  <span className="text-xs text-neutral-400">동작 순서:</span>
+                  <span className="bg-neutral-950 text-white border border-neutral-800 px-2.5 py-1 rounded-xl text-xs font-bold shadow-sm">
+                    {currentMinute === 0 ? 1 : currentMinute}분차 {currentMinute % 2 === 1 ? 'A 동작 (홀수분)' : 'B 동작 (짝수분)'}
+                  </span>
+                </div>
+              </div>
+
+              {/* EMOM 컨트롤 파트 */}
+              <div className="flex flex-col gap-2.5 w-full md:w-auto z-10">
+                <div className="flex gap-2">
+                  {timerActive ? (
+                    <button 
+                      onClick={() => setTimerActive(false)}
+                      className="flex-1 md:flex-none bg-red-600 hover:bg-red-500 text-white font-extrabold text-sm px-6 py-3.5 rounded-2xl transition-all shadow-md shadow-red-600/10"
+                    >
+                      일시 정지
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => setTimerActive(true)}
+                      className="flex-1 md:flex-none bg-lime-500 hover:bg-lime-400 text-neutral-950 font-black text-sm px-6 py-3.5 rounded-2xl transition-all shadow-md shadow-lime-500/20"
+                    >
+                      타이머 시작
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => {
+                      setTimerActive(false);
+                      setTimeLeft(600);
+                      setCurrentMinute(1);
+                    }}
+                    className="bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-sm px-5 py-3.5 rounded-2xl transition-all"
+                  >
+                    리셋
+                  </button>
+                </div>
+                <span className="text-[10px] text-neutral-500 text-center block">
+                  ※ 정각 전환 3초 전 준비 알림 신호가 발생합니다.
+                </span>
+              </div>
+            </div>
+
+            {/* 오늘의 추출 동작 두가지 */}
+            <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-5 md:p-6 shadow-md">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5 border-b border-neutral-800 pb-4">
+                <div>
+                  <h3 className="font-extrabold text-white text-base">TODAY'S EMOM COMPONENT</h3>
+                  <p className="text-xs text-neutral-400">10분 동안 매 분 교대로 훈련할 김현근 선수의 추천 동작</p>
+                </div>
+                <button 
+                  onClick={pickRandomGymnastics}
+                  className="bg-lime-500 hover:bg-lime-400 text-neutral-950 text-xs font-black px-4 py-2.5 rounded-xl transition-all shadow-sm"
+                >
+                  동작 랜덤 갱신 &orarr;
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* 동작 1 (홀수분) */}
+                {(() => {
+                  const mov1 = gymMovements.find(m => m.id === gymSelected[0]);
+                  if (!mov1) return (
+                    <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-5 flex items-center justify-center text-xs text-neutral-500">
+                      동작 랜덤 갱신 버튼을 클릭하여 새 종목을 로드하세요.
+                    </div>
+                  );
+                  return (
+                    <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-5 flex flex-col justify-between">
+                      <div>
+                        <span className="text-lime-500 text-[10px] font-black block tracking-widest uppercase mb-1.5">MINUTE 1, 3, 5, 7, 9 (동작 A)</span>
+                        <h4 className="text-base font-bold text-white mb-2">{mov1.ko}</h4>
+                        <p className="text-xs text-neutral-500">개인 무너짐 없는 최대 개수(Unbroken Max)는 {gymMaxReps[mov1.id] || 0}회 입니다.</p>
+                      </div>
+                      <div className="mt-5 pt-3.5 border-t border-neutral-900 flex justify-between items-center">
+                        <span className="text-xs text-neutral-400 font-bold">권장 페이스:</span>
+                        <span className="bg-lime-500/10 text-lime-400 px-3 py-1 rounded-xl text-xs font-black">
+                          {Math.ceil((gymMaxReps[mov1.id] || 0) * 0.4)} ~ {Math.ceil((gymMaxReps[mov1.id] || 0) * 0.5)} Reps / Min
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* 동작 2 (짝수분) */}
+                {(() => {
+                  const mov2 = gymMovements.find(m => m.id === gymSelected[1]);
+                  if (!mov2) return (
+                    <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-5 flex items-center justify-center text-xs text-neutral-500">
+                      동작 랜덤 갱신 버튼을 클릭하여 새 종목을 로드하세요.
+                    </div>
+                  );
+                  return (
+                    <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-5 flex flex-col justify-between">
+                      <div>
+                        <span className="text-lime-500 text-[10px] font-black block tracking-widest uppercase mb-1.5">MINUTE 2, 4, 6, 8, 10 (동작 B)</span>
+                        <h4 className="text-base font-bold text-white mb-2">{mov2.ko}</h4>
+                        <p className="text-xs text-neutral-500">개인 무너짐 없는 최대 개수(Unbroken Max)는 {gymMaxReps[mov2.id] || 0}회 입니다.</p>
+                      </div>
+                      <div className="mt-5 pt-3.5 border-t border-neutral-900 flex justify-between items-center">
+                        <span className="text-xs text-neutral-400 font-bold">권장 페이스:</span>
+                        <span className="bg-lime-500/10 text-lime-400 px-3 py-1 rounded-xl text-xs font-black">
+                          {Math.ceil((gymMaxReps[mov2.id] || 0) * 0.4)} ~ {Math.ceil((gymMaxReps[mov2.id] || 0) * 0.5)} Reps / Min
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* 체조 최고기록 입력 및 동작 추가/삭제 시트 */}
+            <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-5 md:p-6 shadow-sm">
+              <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-neutral-800 pb-4">
+                <div>
+                  <h3 className="font-extrabold text-white text-base">GYMNASTICS MANAGEMENT BOARD</h3>
+                  <p className="text-xs text-neutral-400">각 체조 동작의 연속 최대 횟수를 기입하거나 직접 신규 종목을 추가/삭제할 수 있습니다.</p>
+                </div>
+              </div>
+
+              {/* 신규 동작 추가 폼 */}
+              <form onSubmit={handleAddGymnastic} className="bg-neutral-950 border border-neutral-800 rounded-2xl p-4 mb-6 flex flex-col sm:flex-row items-end gap-3.5">
+                <div className="flex-1 w-full">
+                  <label className="text-[10px] text-neutral-400 font-bold block mb-1.5 uppercase">신규 체조 종목명 입력</label>
+                  <input 
+                    type="text" 
+                    placeholder="예: 링 딥스 (Ring Dips)" 
+                    value={newGymName}
+                    onChange={(e) => setNewGymName(e.target.value)}
+                    className="w-full bg-neutral-900 border border-neutral-800 focus:border-lime-500 text-white text-sm font-semibold py-2.5 px-3.5 rounded-xl outline-none"
+                  />
+                </div>
+                <div className="w-full sm:w-32">
+                  <label className="text-[10px] text-neutral-400 font-bold block mb-1.5 uppercase">최대 연속 횟수 (Max)</label>
+                  <input 
+                    type="number" 
+                    min="1"
+                    value={newGymMax}
+                    onChange={(e) => setNewGymMax(Number(e.target.value))}
+                    className="w-full bg-neutral-900 border border-neutral-800 focus:border-lime-500 text-white text-sm font-semibold py-2.5 px-3 rounded-xl outline-none text-center"
+                  />
+                </div>
+                <button 
+                  type="submit"
+                  className="w-full sm:w-auto bg-lime-500 hover:bg-lime-400 text-neutral-950 font-black text-xs px-5 py-3 rounded-xl transition-all whitespace-nowrap shadow-md shadow-lime-500/10"
+                >
+                  동작 추가
+                </button>
+              </form>
+
+              {/* 경고 알림 UI (동작 최소한 한계치 경보) */}
+              {showGymMinWarning && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-3.5 rounded-2xl mb-4 font-semibold flex items-center justify-between">
+                  <span>⚠️ 랜덤 매칭 구동을 위해 최소 2개 이상의 체조 동작이 항상 유지되어야 합니다.</span>
+                  <button onClick={() => setShowGymMinWarning(false)} className="text-red-400 font-black px-2">&times;</button>
+                </div>
+              )}
+
+              {/* 체조 목록 그리드 및 삭제 액션 보드 */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                {gymMovements.map((mov) => (
+                  <div key={mov.id} className="bg-neutral-950 border border-neutral-800/60 p-3.5 rounded-xl flex justify-between items-center gap-3 transition-colors hover:border-neutral-800">
+                    <div className="flex items-center gap-2 truncate">
+                      {/* 삭제 버튼 */}
+                      <button 
+                        onClick={() => handleDeleteGymnastic(mov.id)}
+                        title="동작 삭제"
+                        className="w-5 h-5 rounded-md flex items-center justify-center bg-red-600/10 hover:bg-red-600 text-red-500 text-xs transition-all hover:scale-105 shrink-0"
+                      >
+                        &times;
+                      </button>
+                      <span className="text-xs font-semibold text-white truncate">{mov.ko}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <input 
+                        type="number" 
+                        value={gymMaxReps[mov.id] || 0}
+                        onChange={(e) => handleGymMaxChange(mov.id, e.target.value)}
+                        className="bg-neutral-900 border border-neutral-800 focus:border-lime-500 text-white text-xs font-bold w-14 py-1 px-1.5 rounded-lg text-center outline-none"
+                      />
+                      <span className="text-[10px] text-neutral-500 font-bold">회</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* ==========================================
+            TAB E. 1RM & RECORD INPUT SHEET (기록 시트)
+            ========================================== */}
+        {activeTab === 'onerm' && (
+          <div className="flex flex-col gap-6 w-full">
+            
+            {/* 상단 통합 뒤로가기 바 */}
+            <div className="flex items-center justify-between">
+              <button 
+                onClick={() => setActiveTab('dashboard')}
+                className="flex items-center gap-2 text-xs font-black text-lime-400 hover:text-white bg-neutral-900 border border-neutral-800 hover:border-neutral-700 px-3.5 py-2 rounded-xl transition-all"
+              >
+                &larr; 메인 대시보드
+              </button>
+              <span className="text-xs font-bold text-neutral-500">ATHLETE PROFILE SHEET</span>
+            </div>
+
+            {/* 기록보드 카드 */}
+            <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 shadow-xl">
+              <div className="border-b border-neutral-800 pb-4 mb-6">
+                <h3 className="text-lg font-extrabold text-white">HG'S 1-REP MAX PROFILE</h3>
+                <p className="text-xs text-neutral-400">김현근 선수의 1RM 최대 중량 데이터베이스. 파운드(lbs) 단위로 변경 시 모든 % 연동 훈련에 즉시 동기화됩니다.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                {/* 1. 역도 핵심 1RM 세션 */}
+                <div className="flex flex-col gap-4">
+                  <span className="text-lime-500 text-xs font-black uppercase tracking-wider">Olympic Weightlifting 1RM</span>
+                  <div className="grid grid-cols-1 gap-3.5">
+                    
+                    {/* 스내치 */}
+                    <div className="bg-neutral-950 border border-neutral-800 p-4 rounded-2xl flex items-center justify-between">
+                      <div>
+                        <span className="text-sm font-bold text-white block">SQUAT SNATCH</span>
+                        <span className="text-xs text-neutral-500">스내치 복합 훈련용 베이스</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input 
+                          type="number" 
+                          value={oneRM.snatch}
+                          onChange={(e) => handleOneRMChange('snatch', e.target.value)}
+                          className="bg-neutral-900 border border-neutral-700 focus:border-lime-500 text-white text-sm font-black w-24 p-2 rounded-xl text-center outline-none"
+                        />
+                        <span className="text-xs text-neutral-400 font-bold">lbs</span>
+                      </div>
+                    </div>
+
+                    {/* 클린앤저크 */}
+                    <div className="bg-neutral-950 border border-neutral-800 p-4 rounded-2xl flex items-center justify-between">
+                      <div>
+                        <span className="text-sm font-bold text-white block">CLEAN & JERK</span>
+                        <span className="text-xs text-neutral-500">클린&저크 콤보용 베이스</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input 
+                          type="number" 
+                          value={oneRM.cleanJerk}
+                          onChange={(e) => handleOneRMChange('cleanJerk', e.target.value)}
+                          className="bg-neutral-900 border border-neutral-700 focus:border-lime-500 text-white text-sm font-black w-24 p-2 rounded-xl text-center outline-none"
+                        />
+                        <span className="text-xs text-neutral-400 font-bold">lbs</span>
+                      </div>
+                    </div>
+
+                    {/* 프론트 스쿼트 */}
+                    <div className="bg-neutral-950 border border-neutral-800 p-4 rounded-2xl flex items-center justify-between">
+                      <div>
+                        <span className="text-sm font-bold text-white block">FRONT SQUAT</span>
+                        <span className="text-xs text-neutral-500">프론트 스쿼트용 베이스</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input 
+                          type="number" 
+                          value={oneRM.frontSquat}
+                          onChange={(e) => handleOneRMChange('frontSquat', e.target.value)}
+                          className="bg-neutral-900 border border-neutral-700 focus:border-lime-500 text-white text-sm font-black w-24 p-2 rounded-xl text-center outline-none"
+                        />
+                        <span className="text-xs text-neutral-400 font-bold">lbs</span>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* 2. 스트렝스 핵심 1RM 세션 */}
+                <div className="flex flex-col gap-4">
+                  <span className="text-lime-500 text-xs font-black uppercase tracking-wider">Strength Lift (Epley 5RM 자동 변환)</span>
+                  <div className="grid grid-cols-1 gap-3.5">
+                    
+                    {/* 백스쿼트 */}
+                    <div className="bg-neutral-950 border border-neutral-800 p-4 rounded-2xl flex items-center justify-between">
+                      <div>
+                        <span className="text-sm font-bold text-white block">BACK SQUAT</span>
+                        <span className="text-xs text-lime-400 font-bold">자동 5RM: {calculate5RM(oneRM.backSquat)}lb</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input 
+                          type="number" 
+                          value={oneRM.backSquat}
+                          onChange={(e) => handleOneRMChange('backSquat', e.target.value)}
+                          className="bg-neutral-900 border border-neutral-700 focus:border-lime-500 text-white text-sm font-black w-24 p-2 rounded-xl text-center outline-none"
+                        />
+                        <span className="text-xs text-neutral-400 font-bold">lbs</span>
+                      </div>
+                    </div>
+
+                    {/* 데드리프트 */}
+                    <div className="bg-neutral-950 border border-neutral-800 p-4 rounded-2xl flex items-center justify-between">
+                      <div>
+                        <span className="text-sm font-bold text-white block">DEADLIFT</span>
+                        <span className="text-xs text-lime-400 font-bold">자동 5RM: {calculate5RM(oneRM.deadlift)}lb</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input 
+                          type="number" 
+                          value={oneRM.deadlift}
+                          onChange={(e) => handleOneRMChange('deadlift', e.target.value)}
+                          className="bg-neutral-900 border border-neutral-700 focus:border-lime-500 text-white text-sm font-black w-24 p-2 rounded-xl text-center outline-none"
+                        />
+                        <span className="text-xs text-neutral-400 font-bold">lbs</span>
+                      </div>
+                    </div>
+
+                    {/* 오버헤드 프레스 */}
+                    <div className="bg-neutral-950 border border-neutral-800 p-4 rounded-2xl flex items-center justify-between">
+                      <div>
+                        <span className="text-sm font-bold text-white block">OVERHEAD PRESS</span>
+                        <span className="text-xs text-lime-400 font-bold">자동 5RM: {calculate5RM(oneRM.overheadPress)}lb</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input 
+                          type="number" 
+                          value={oneRM.overheadPress}
+                          onChange={(e) => handleOneRMChange('overheadPress', e.target.value)}
+                          className="bg-neutral-900 border border-neutral-700 focus:border-lime-500 text-white text-sm font-black w-24 p-2 rounded-xl text-center outline-none"
+                        />
+                        <span className="text-xs text-neutral-400 font-bold">lbs</span>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        )}
+
+      </main>
+
+      {/* --- 세련된 푸터 --- */}
+      <footer className="bg-neutral-900 border-t border-neutral-800 py-6 mt-12 text-center text-xs text-neutral-500">
+        <div>CF Training by HG Web Application</div>
+        <div className="mt-1 font-semibold text-neutral-400">designed for Athlete Kim Hyun-geun 👑</div>
+      </footer>
+
+    </div>
+  );
+}
